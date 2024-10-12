@@ -8,26 +8,33 @@ import javax.swing.text.AbstractDocument;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Random;
 
 public class Wordle extends JFrame implements ActionListener {
-    JLabel[][] boxes = new JLabel[6][5];
+    static int cols = 5;
+    static int rows = 6;
+
+    JLabel[][] boxes = new JLabel[rows][cols];
+
     JLabel victoryScreen = new JLabel("You guessed correctly!");
     JPanel boxPanel = new JPanel();
     JTextField textField = new JTextField();
     JButton submit = new JButton("Guess");
     static int currentRow = 0;
-    String wordOfTheDay = "APPLE";
     JButton newGame = new JButton("New word");
     int correctChars = 0;
-    
+    Random random = new Random();
+    String dailyWord = getWord();
 
 
     Wordle() {
 
+
+
         ((AbstractDocument) textField.getDocument()).setDocumentFilter(new LimitDocumentFilter(5));
 
-        for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < 5; j++) {
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
                 Border blackLine = BorderFactory.createLineBorder(Color.DARK_GRAY, 2);
                 boxes[i][j] = new JLabel();
                 boxes[i][j].setBorder(blackLine);
@@ -49,7 +56,7 @@ public class Wordle extends JFrame implements ActionListener {
                     boxes[currentRow][i].setText("");
                 }
                 String text = textField.getText();
-                for (int i = 0; i < text.length() && i < 5; i++) {
+                for (int i = 0; i < text.length() && i < cols; i++) {
                     boxes[currentRow][i].setText(String.valueOf(text.charAt(i)).toUpperCase());
                 }
 
@@ -58,7 +65,7 @@ public class Wordle extends JFrame implements ActionListener {
             @Override
             public void removeUpdate(DocumentEvent e) {
                 String text = textField.getText();
-                for (int i = 0; i < 5; i++) {
+                for (int i = 0; i < cols; i++) {
                     if (i < text.length()) {
                         boxes[currentRow][i].setText(String.valueOf(text.charAt(i)).toUpperCase());
                     } else {
@@ -82,6 +89,8 @@ public class Wordle extends JFrame implements ActionListener {
         add(textField);
         add(submit);
         add(newGame);
+        textField.setVisible(false);
+        textField.setBounds(100,100,100,30);
 
         Font buttonFont = new Font("Helvetica", Font.PLAIN, 20);
 
@@ -117,31 +126,41 @@ public class Wordle extends JFrame implements ActionListener {
         setLocationRelativeTo(null);
         setVisible(true);
 
-
-
-
-
+    }
+    private String getWord(){
+        String[] wordList = {
+                "apple", "grape", "melon", "peach", "berry",
+                "mango", "lemon", "plumb", "olive", "kiwi",
+                "tiger", "zebra", "eagle", "whale", "shark",
+                "flame", "storm", "blaze", "cloud", "shine",
+                "water", "earth", "stone", "light", "river",
+                "chair", "table", "clock", "piano", "phone",
+                "brick", "brush", "glass", "plate", "frame"
+        };
+        String word = wordList[random.nextInt(35)].toUpperCase();
+        System.out.println(word);
+        return word;
     }
 
     private int[] getColor(String userWord, int[] arr) {
-        userWord = userWord.toUpperCase(); 
-        boolean[] matched = new boolean[5]; 
-        
-        for (int i = 0; i < 5; i++) {
-            if (userWord.charAt(i) == wordOfTheDay.charAt(i)) {
+        userWord = userWord.toUpperCase();
+        boolean[] matched = new boolean[cols];
+
+        for (int i = 0; i < cols; i++) {
+            if (userWord.charAt(i) == dailyWord.charAt(i)) {
                 arr[i] = 1;
-                matched[i] = true; 
+                matched[i] = true;
             }
         }
-        
-        for (int i = 0; i < 5; i++) {
-            if (arr[i] != 1) { 
-                int indexInWord = wordOfTheDay.indexOf(userWord.charAt(i));
+
+        for (int i = 0; i < cols; i++) {
+            if (arr[i] != 1) {
+                int indexInWord = dailyWord.indexOf(userWord.charAt(i));
                 if (indexInWord != -1 && !matched[indexInWord]) {
-                    arr[i] = 0; 
-                    matched[indexInWord] = true; 
+                    arr[i] = 0;
+                    matched[indexInWord] = true;
                 } else {
-                    arr[i] = -1; 
+                    arr[i] = -1;
                 }
             }
         }
@@ -155,45 +174,54 @@ public class Wordle extends JFrame implements ActionListener {
     public void actionPerformed(ActionEvent e) {
 
         if (e.getSource() == submit) {
+            if (currentRow == rows-1)
+                textField.setEditable(false);
             textField.requestFocusInWindow();
             String userWord = textField.getText();
-            if (userWord.length() == 5) {
+            if (userWord.length() == cols) {
 
 
-                int[] arr = new int[5];
+                int[] arr = new int[cols];
                 int [] colorArr = getColor(userWord, arr);
 
-                for (int i = 0; i < 5; i++) {
+                for (int i = 0; i < cols; i++) {
 
                     switch (colorArr[i]) {
                         case 1: {boxes[currentRow][i].setBackground(Color.decode("#B2E1C6"));
-                        correctChars++;
+                            correctChars++;
                         }
                         break;
                         case 0: boxes[currentRow][i].setBackground(Color.decode("#F9E39D"));
-                        break;
+                            break;
                         case -1: boxes[currentRow][i].setBackground(Color.decode("#F6B4B0"));
                     }
                 }
-                if (correctChars == 5) {
-                    textField.setFocusable(false);
+                if (correctChars == cols) {
+                    textField.setEditable(false);
                     victoryScreen.setVisible(true);
                 }
+                if (currentRow < cols) {
+                    currentRow++;
+                    textField.setText("");
+                    }
+
+                System.out.println(currentRow);
+
                 correctChars = 0;
-                currentRow++;
-                textField.setText("");
+
 
             }
         }
         else if (e.getSource() == newGame) {
-            textField.setFocusable(true);
+            dailyWord = getWord();
+            textField.setEditable(true);
             textField.requestFocusInWindow();
             correctChars = 0;
             victoryScreen.setVisible(false);
             textField.setText("");
             currentRow = 0;
-            for (int i = 0; i < 6; i++) {
-                for (int j = 0; j < 5; j++) {
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < cols; j++) {
                     boxes[i][j].setText("");
                     boxes[i][j].setBackground(Color.decode("#121213"));
 
